@@ -4,7 +4,7 @@ from sqlalchemy import Column, Integer, String, Float, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
-import datetime
+from datetime import datetime, timezone
 import os
 
 # 1. Configuration de la base de données
@@ -34,7 +34,7 @@ class Expense(Base):
     amount = Column(Float)
     latitude = Column(Float)
     longitude = Column(Float)
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 # Créer les tables au démarrage
 Base.metadata.create_all(bind=engine)
