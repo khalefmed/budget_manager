@@ -7,7 +7,8 @@ from sqlalchemy import create_engine
 import datetime
 
 # 1. Configuration de la base de données SQLite
-SQLALCHEMY_DATABASE_URL = "sqlite:///./budget.db"
+# SQLALCHEMY_DATABASE_URL = "sqlite:///./budget.db" #dev
+SQLALCHEMY_DATABASE_URL = "sqlite:////home/elkhalefmed/budget_manager/budget.db" #prod
 engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
