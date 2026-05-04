@@ -6,6 +6,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 from datetime import datetime, timezone
 import os
+from fastapi.middleware.cors import CORSMiddleware
 
 # 1. Configuration de la base de données
 # Sur Render, on utilise DATABASE_URL. Sinon, on utilise SQLite en local.
@@ -48,6 +49,14 @@ class ExpenseCreate(BaseModel):
 
 # 4. FastAPI App
 app = FastAPI(title="Mon Budget API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # En production, remplace par l'URL de ton app React
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.post("/depense")
 async def create_expense(expense: ExpenseCreate):
