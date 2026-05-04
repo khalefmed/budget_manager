@@ -1,19 +1,32 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from sqlalchemy import Column, Integer, String, Float, DateTime # Correction ici
+from sqlalchemy import Column, Integer, String, Float, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 import datetime
+import os
 
-# 1. Configuration de la base de données SQLite
-# SQLALCHEMY_DATABASE_URL = "sqlite:///./budget.db" #dev
-SQLALCHEMY_DATABASE_URL = "sqlite:////home/elkhalefmed/budget_manager/budget.db" #prod
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+# 1. Configuration de la base de données
+# Sur Render, on utilise DATABASE_URL. Sinon, on utilise SQLite en local.
+DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///./budget.db")
+
+# Correction pour SQLAlchemy si l'URL commence par postgres:// (fréquent sur Render/Heroku)
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+# Configuration de l'engine
+if "postgresql" in DATABASE_URL:
+    # Pour PostgreSQL
+    engine = create_engine(DATABASE_URL)
+else:
+    # Pour SQLite (connect_args est nécessaire uniquement pour SQLite)
+    engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-# 2. Modèle de la table dans la base de données
+# 2. Modèle de la table
 class Expense(Base):
     __tablename__ = "expenses"
     id = Column(Integer, primary_key=True, index=True)
@@ -21,20 +34,19 @@ class Expense(Base):
     amount = Column(Float)
     latitude = Column(Float)
     longitude = Column(Float)
-    timestamp = Column(DateTime, default=datetime.datetime.utcnow)
+    timestamp = Column(DateTime, default=datetime.utcnow)
 
-# Créer la table si elle n'existe pas
+# Créer les tables au démarrage
 Base.metadata.create_all(bind=engine)
 
-# 3. Schéma de données pour la validation (Pydantic)
-# Note: Ces noms de champs doivent être EXACTEMENT les mêmes que vos "Keys" dans iOS Shortcuts
+# 3. Schéma Pydantic
 class ExpenseCreate(BaseModel):
     label: str
     amount: float
     latitude: float
     longitude: float
 
-# 4. Initialisation de l'application FastAPI
+# 4. FastAPI App
 app = FastAPI(title="Mon Budget API")
 
 @app.post("/depense")
@@ -63,7 +75,3 @@ async def get_all_expenses():
     expenses = db.query(Expense).all()
     db.close()
     return expenses
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
